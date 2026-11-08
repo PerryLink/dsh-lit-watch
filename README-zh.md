@@ -69,6 +69,9 @@ dsh plugin --profile <name> add @perrylink/dsh-research-core dsh-lit-watch
 dsh --profile <name> --dump-config | grep dsh-lit-watch
 ```
 
+
+> **家族统一 peer 说明：** 尽管本包运行时不 import，`@perrylink/dsh-research-core` 仍作为 peer 声明，以保证整个研究插件家族使用同一套安装契约。
+
 ## 配置
 
 | 键 | 默认值 | 含义 |
