@@ -4,7 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.1] - 2026-11-08
+
+### Changed
+
+- Release-engineering refresh: CHANGELOG accuracy, package metadata and authors; no runtime changes.
+
+## [0.1.0] - 2026-11-08
 
 ### Fixed
 
@@ -31,8 +37,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   redirect cap, non-2xx rejection, 429 retry, timeout, header injection and
   per-host throttling; cache, corrupt-store and impossible-date regression
   tests; plugin mount contract (30 tests total).
-
-## [0.1.0] - 2026-11-08
 
 First release: literature watches over Crossref.
 
