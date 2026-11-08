@@ -1,0 +1,18 @@
+# dsh-lit-watch bundle patch: mount the literature-watch tools.
+#
+# Every key below is a Config field (Schemastery schema); invalid values fail the
+# profile load loudly. Only Crossref is contacted, over HTTPS.
+- insert:
+    - id: dsh-lit-watch
+      name: dsh-lit-watch
+      config:
+        enabled: true
+        root: .lit-watch
+        userAgent: dsh-lit-watch/0.1.0 (https://github.com/PerryLink/dsh-lit-watch)
+        timeoutMs: 15000
+        minIntervalMs: 150
+        retries: 1
+        maxRedirects: 3
+        cacheTtlMs: 21600000
+        maxResults: 100
+        maxWatches: 50
