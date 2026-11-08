@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { WatchNetworkError } from '../src/http.ts'
 import { assertDate, assertName, buildWatchUrl, parseItems, unseenItems } from '../src/watch.ts'
 
 const BODY = JSON.stringify({
@@ -23,6 +24,10 @@ describe('watch definitions', () => {
     expect(() => assertName('bad name!')).toThrow(RangeError)
     expect(assertDate('2026-01-31', 'since')).toBe('2026-01-31')
     expect(() => assertDate('2026-13-01', 'since')).toThrow(RangeError)
+    // Date() silently normalizes impossible days; assertDate must not.
+    expect(() => assertDate('2026-02-31', 'since')).toThrow(RangeError)
+    expect(() => assertDate('2026-04-31', 'since')).toThrow(RangeError)
+    expect(() => assertDate('2026-1-3', 'since')).toThrow(/YYYY-MM-DD/u)
   })
 
   it('builds the Crossref URL with filters and mailto', () => {
@@ -53,5 +58,13 @@ describe('items and diff', () => {
     expect(unseenItems(items, {})).toHaveLength(2)
     expect(unseenItems(items, { '10.5555/a': 'seen' })).toHaveLength(1)
     expect(unseenItems(items, { '10.5555/a': 'seen', '10.5555/b': 'seen' })).toHaveLength(0)
+  })
+
+  it('rejects malformed Crossref responses with a typed error', () => {
+    expect(() => parseItems('not json')).toThrow(WatchNetworkError)
+    expect(() => parseItems('[]')).toThrow(/JSON object/u)
+    expect(() => parseItems('{"message":null}')).toThrow(/message/u)
+    expect(() => parseItems('{"message":{"items":{}}}')).toThrow(/items/u)
+    expect(() => parseItems('{"message":{"items":[]}}')).not.toThrow()
   })
 })

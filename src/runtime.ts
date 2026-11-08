@@ -9,6 +9,7 @@
  */
 
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import type { ResolvedConfig } from './config.ts'
 import { ALLOWED_HOSTS, createHttpClient, WatchNetworkError, type HttpClient } from './http.ts'
@@ -16,8 +17,8 @@ import { renderDigest, renderSarif } from './report.ts'
 import { assertDate, assertName, buildWatchUrl, parseItems, unseenItems, type SeenStore, type Watch, type WatchRun } from './watch.ts'
 import { VERSION } from './version.ts'
 
-/** Stable error codes. */
-export type LitErrorCode = 'INVALID_INPUT' | 'WATCH_UNKNOWN' | 'WATCH_EXISTS' | 'LIMIT' | 'NETWORK_ERROR' | 'STORE_ERROR'
+/** Stable tool-level error codes. Network errors are per-watch run errors. */
+export type LitErrorCode = 'INVALID_INPUT' | 'WATCH_UNKNOWN' | 'WATCH_EXISTS' | 'LIMIT' | 'STORE_ERROR'
 
 /** A typed failure. */
 export class LitError extends Error {
@@ -36,6 +37,11 @@ export interface LitRuntimeOptions {
   readonly config: ResolvedConfig
   readonly client?: HttpClient
   readonly now?: () => Date
+}
+
+/** Stable, filesystem-safe cache key for an exact query URL. */
+function cacheKeyOf(url: string): string {
+  return createHash('sha256').update(url).digest('hex')
 }
 
 /** The runtime. */
@@ -79,10 +85,12 @@ export class LitWatchRuntime {
   /** Read watches. */
   async watches(): Promise<Watch[]> {
     try {
-      const parsed = JSON.parse(await readFile(this.paths.watches, 'utf8')) as Watch[]
-      return Array.isArray(parsed) ? parsed : []
+      const parsed: unknown = JSON.parse(await readFile(this.paths.watches, 'utf8'))
+      if (!Array.isArray(parsed)) throw new LitError('STORE_ERROR', 'watches.json is not a JSON array; refusing to overwrite it')
+      return parsed as Watch[]
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+      if (error instanceof LitError) throw error
       throw new LitError('STORE_ERROR', `cannot read watches: ${(error as Error).message}`)
     }
   }
@@ -90,9 +98,12 @@ export class LitWatchRuntime {
   /** Read the seen store. */
   async seen(): Promise<SeenStore> {
     try {
-      return JSON.parse(await readFile(this.paths.seen, 'utf8')) as SeenStore
+      const parsed: unknown = JSON.parse(await readFile(this.paths.seen, 'utf8'))
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new LitError('STORE_ERROR', 'seen.json is not a JSON object; refusing to overwrite it')
+      return parsed as SeenStore
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
+      if (error instanceof LitError) throw error
       throw new LitError('STORE_ERROR', `cannot read the seen store: ${(error as Error).message}`)
     }
   }
@@ -104,6 +115,8 @@ export class LitWatchRuntime {
    */
   async add(request: { name?: string; query?: string; filter?: string; since?: string; rows?: number; replace?: boolean }): Promise<Watch> {
     if (typeof request.query !== 'string' || request.query.trim() === '') throw new LitError('INVALID_INPUT', 'query is required')
+    if (request.filter !== undefined && typeof request.filter !== 'string') throw new LitError('INVALID_INPUT', 'filter must be a string when present')
+    if (request.since !== undefined && typeof request.since !== 'string') throw new LitError('INVALID_INPUT', 'since must be a YYYY-MM-DD string')
     const name = assertName(request.name ?? '')
     const since = request.since === undefined ? undefined : assertDate(request.since, 'since')
     const rows = request.rows
@@ -176,10 +189,13 @@ export class LitWatchRuntime {
       const ranAt = this.iso()
       let run: WatchRun
       try {
-        const cached = await this.#cacheGet(url, request.fresh === true)
+        const cacheKey = cacheKeyOf(url)
+        const cached = await this.#cacheGet(cacheKey, request.fresh === true)
         const body = cached ?? (await this.#client.get(url, { accept: 'application/json' })).body
-        if (cached === undefined) await this.#cachePut(url, body)
         const parsed = parseItems(body)
+        // Cache only after a successful parse: caching an invalid body would
+        // keep failing the same watch until the TTL expires.
+        if (cached === undefined) await this.#cachePut(cacheKey, body)
         const freshItems = unseenItems(parsed.items, seen)
         for (const item of freshItems) seen[item.doi.toLowerCase()] = ranAt
         run = {

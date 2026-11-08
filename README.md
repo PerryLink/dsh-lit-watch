@@ -51,7 +51,9 @@ English · [简体中文](README-zh.md)
 
 ### Error codes
 
-`INVALID_INPUT` · `WATCH_UNKNOWN` · `WATCH_EXISTS` · `LIMIT` · `NETWORK_ERROR` · `STORE_ERROR`
+Tool failures: `INVALID_INPUT` · `WATCH_UNKNOWN` · `WATCH_EXISTS` · `LIMIT` · `STORE_ERROR`.
+
+Per-watch run errors (inside `runs[].error`): `blocked_host` · `invalid_url` · `too_many_redirects` · `timeout` · `http_error` · `invalid_response` · `network_error`.
 
 ## Compatibility & install
 
@@ -83,12 +85,12 @@ dsh --profile <name> --dump-config | grep dsh-lit-watch
 
 - HTTPS only, exact-host allowlist (`api.crossref.org`), manual redirects re-validated hop by hop.
 - No credentials in URLs, no custom ports; no user data beyond the query text is sent.
+- Non-2xx statuses and non-JSON bodies fail the watch instead of being treated as an empty result; the response cache is keyed by a SHA-256 of the exact URL.
 - Watch files are local JSON; writes only under `root`.
-- The seen store is capped by config via watch count and history trimming (manual prune for very large stores).
 
 ## Evaluation
 
-**12 tests**: URL construction (query, combined filter, mailto), date/name validation, item parsing (DOI/title required, year/venue/authors), case-insensitive diff, runtime dedupe across three runs (2 → 0 → 1 new) with window advancement, local network-failure isolation with no window advance, watch replace/unknown/limits, digest + history, tool schemas, add→run→report end to end, failure branches, package contract.
+**30 tests**: URL construction (query, combined filter, mailto), date/name validation including impossible calendar days, item parsing (DOI/title required, year/venue/authors) and malformed-response rejection, case-insensitive diff, runtime dedupe across three runs (2 → 0 → 1 new) with window advancement, exact-URL cache hits, `fresh` bypass and refusing to cache a malformed body, local network-failure isolation with no window advance, watch replace/unknown/limits, corrupt-store refusal, digest + history, HTTP bounds (allowlist, per-hop redirect re-validation, redirect cap, non-2xx rejection, 429 retry, timeout, throttle), tool schemas, add→run→report end to end, failure branches, plugin contract, package contract.
 
 No benchmark is claimed: the value is diff correctness against a fixed seen store, which the tests pin down; there is no labelled relevance corpus.
 

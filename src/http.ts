@@ -1,15 +1,16 @@
 /**
  * Bounded HTTP client for Crossref (HTTPS, exact-host allowlist, manual
- * redirect re-validation, timeout, per-host interval, one retry on 429/503).
+ * redirect re-validation, timeout, per-host interval, one retry on 429/503,
+ * non-2xx rejection).
  * The fetch implementation is injectable so tests never touch the network.
- * @module dsh-retraction-watch/http
+ * @module dsh-lit-watch/http
  */
 
 /** The only host this plugin talks to. */
 export const ALLOWED_HOSTS: readonly string[] = ['api.crossref.org']
 
 /** Stable network failure codes. */
-export type NetworkErrorCode = 'blocked_host' | 'invalid_url' | 'too_many_redirects' | 'timeout' | 'network_error' | 'http_error'
+export type NetworkErrorCode = 'blocked_host' | 'invalid_url' | 'too_many_redirects' | 'timeout' | 'network_error' | 'http_error' | 'invalid_response'
 
 /** A transport-level failure. */
 export class WatchNetworkError extends Error {
@@ -123,6 +124,20 @@ export function createHttpClient(options: HttpClientOptions): HttpClient {
     }
   }
 
+  /** Reject non-2xx responses and map body-read aborts to typed errors. */
+  const readBody = async (response: Response, url: string): Promise<string> => {
+    if (response.status < 200 || response.status >= 300) {
+      throw new WatchNetworkError('http_error', `HTTP ${response.status} from ${url}`)
+    }
+    try {
+      return await response.text()
+    } catch (error) {
+      const name = (error as Error).name
+      if (name === 'TimeoutError' || name === 'AbortError') throw new WatchNetworkError('timeout', `reading the response timed out after ${options.timeoutMs} ms: ${url}`)
+      throw new WatchNetworkError('network_error', `could not read the response from ${url}: ${(error as Error).message}`)
+    }
+  }
+
   return {
     async get(url: string, requestOptions: { accept?: string } = {}): Promise<HttpResponse> {
       let current = assertAllowed(url, allowed).toString()
@@ -135,7 +150,7 @@ export function createHttpClient(options: HttpClientOptions): HttpClient {
           current = assertAllowed(new URL(location, current).toString(), allowed).toString()
           continue
         }
-        const body = await response.text()
+        const body = await readBody(response, current)
         return { status: response.status, body, url: current }
       }
       throw new WatchNetworkError('too_many_redirects', `more than ${options.maxRedirects} redirects starting at ${url}`)

@@ -3,7 +3,7 @@
  * @module test/runtime-tools.spec
  */
 
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -118,6 +118,46 @@ describe('runtime', () => {
     expect(report.markdown).toContain('10.5555/a')
     expect((report.sarif as { runs: Array<{ results: unknown[] }> }).runs[0]!.results).toHaveLength(1)
   })
+
+  it('caches by the exact query URL and lets fresh bypass the cache', async () => {
+    const fake = fakeClient([body(['10.5555/a'])])
+    const rt = new LitWatchRuntime({ config: resolveConfig({ root, cacheTtlMs: 60_000 }), client: fake.client, now: () => AT })
+    await rt.add({ name: 'cached', query: 'q' })
+    await rt.run({ name: 'cached' }) // first URL (no window)
+    await rt.run({ name: 'cached' }) // window URL, cache miss, now cached
+    const third = await rt.run({ name: 'cached' }) // same window URL -> cache hit
+    expect(fake.urls).toHaveLength(2)
+    expect(third.runs[0]!.newCount).toBe(0)
+    await rt.run({ name: 'cached', fresh: true })
+    expect(fake.urls).toHaveLength(3)
+  })
+
+  it('does not cache a malformed response body', async () => {
+    let calls = 0
+    const client: HttpClient = {
+      async get(url) {
+        calls += 1
+        return { status: 200, body: calls === 1 ? 'not json' : body(['10.5555/a']), url }
+      },
+    }
+    const rt = new LitWatchRuntime({ config: resolveConfig({ root, cacheTtlMs: 60_000 }), client, now: () => AT })
+    await rt.add({ name: 'retry-parse', query: 'q' })
+    const first = await rt.run({ name: 'retry-parse' })
+    expect(first.runs[0]!.error?.code).toBe('invalid_response')
+    const second = await rt.run({ name: 'retry-parse' })
+    expect(calls).toBe(2)
+    expect(second.runs[0]!.newCount).toBe(1)
+  })
+
+  it('refuses to overwrite a non-array watches store or a non-object seen store', async () => {
+    await writeFile(path.join(root, 'watches.json'), '{}', 'utf8')
+    await expect(runtime(fakeClient([body([])]).client).run()).rejects.toMatchObject({ code: 'STORE_ERROR' })
+    await rm(path.join(root, 'watches.json'))
+    const rt = runtime(fakeClient([body([])]).client)
+    await rt.add({ name: 'w', query: 'q' })
+    await writeFile(path.join(root, 'seen.json'), '[]', 'utf8')
+    await expect(rt.run({ name: 'w' })).rejects.toMatchObject({ code: 'STORE_ERROR' })
+  })
 })
 
 describe('tools', () => {
@@ -150,6 +190,14 @@ describe('tools', () => {
     const value = (await makeLitRunTool(rt).execute({}, EXEC)) as { ok: false; error: { code: string } }
     expect(value.ok).toBe(false)
     expect(value.error.code).toBe('INVALID_INPUT')
+
+    const badDate = (await makeLitAddTool(rt).execute({ name: 'x', query: 'q', since: '2026-02-31' }, EXEC)) as { ok: false; error: { code: string } }
+    expect(badDate.error.code).toBe('INVALID_INPUT')
+
+    const malformedRuns = (await makeLitReportTool(rt).execute({ runs: [{}] }, EXEC)) as { ok: false; error: { code: string } }
+    expect(malformedRuns.error.code).toBe('INVALID_INPUT')
+    const notAnArray = (await makeLitReportTool(rt).execute({ runs: 'nope' }, EXEC)) as { ok: false; error: { code: string } }
+    expect(notAnArray.error.code).toBe('INVALID_INPUT')
   })
 })
 

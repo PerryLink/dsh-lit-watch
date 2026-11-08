@@ -10,6 +10,8 @@
  * @module dsh-lit-watch/watch
  */
 
+import { WatchNetworkError } from './http.ts'
+
 /** A saved watch. */
 export interface Watch {
   readonly name: string
@@ -64,9 +66,11 @@ export function assertName(name: string): string {
 
 /** Validate a YYYY-MM-DD date. */
 export function assertDate(value: string, label: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) throw new RangeError(`${label} must be YYYY-MM-DD`)
-  const parsed = new Date(`${value}T00:00:00Z`)
-  if (Number.isNaN(parsed.getTime())) throw new RangeError(`${label} is not a real date`)
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) throw new RangeError(`${label} must be YYYY-MM-DD`)
+  const parsed = new Date(`${value}T00:00:00.000Z`)
+  // Date() normalizes impossible dates (2026-02-31 → March), so reject any
+  // value that does not round-trip to the same calendar day.
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) throw new RangeError(`${label} is not a real date`)
   return value
 }
 
@@ -89,10 +93,22 @@ export function buildWatchUrl(watch: Watch, options: { readonly since?: string; 
 
 /** Parse a Crossref work-list response. */
 export function parseItems(body: string): { totalResults?: number; items: WatchItem[] } {
-  const parsed = JSON.parse(body) as { message?: { 'total-results'?: number; items?: Array<Record<string, unknown>> } }
-  const raw = parsed.message?.items ?? []
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(body)
+  } catch {
+    throw new WatchNetworkError('invalid_response', 'Crossref returned a response that is not valid JSON')
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new WatchNetworkError('invalid_response', 'Crossref response is not a JSON object')
+  const message = (parsed as { message?: unknown }).message
+  if (typeof message !== 'object' || message === null) throw new WatchNetworkError('invalid_response', 'Crossref response has no message object')
+  const rawItems = (message as { items?: unknown }).items
+  if (rawItems !== undefined && !Array.isArray(rawItems)) throw new WatchNetworkError('invalid_response', 'Crossref response items is not an array')
+  const raw = Array.isArray(rawItems) ? rawItems : []
   const items: WatchItem[] = []
-  for (const item of raw) {
+  for (const value of raw) {
+    if (typeof value !== 'object' || value === null) continue
+    const item = value as Record<string, unknown>
     const doi = typeof item['DOI'] === 'string' ? item['DOI'] : undefined
     const titles = item['title']
     const title = Array.isArray(titles) && typeof titles[0] === 'string' ? titles[0] : undefined
@@ -115,7 +131,8 @@ export function parseItems(body: string): { totalResults?: number; items: WatchI
       ...(typeof item['type'] === 'string' ? { type: item['type'] } : {}),
     })
   }
-  return { ...(typeof parsed.message?.['total-results'] === 'number' ? { totalResults: parsed.message['total-results'] } : {}), items }
+  const total = (message as { 'total-results'?: unknown })['total-results']
+  return { ...(typeof total === 'number' ? { totalResults: total } : {}), items }
 }
 
 /** Filter items that were not seen before. */
