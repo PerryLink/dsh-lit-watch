@@ -1,13 +1,22 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-hero-zh-dark.webp">
+  <img src="docs/assets/dsh-lit-watch-hero-zh-light.webp" width="100%" alt="dsh-lit-watch 配图：同一个 Crossref 检索连续跑三次——第 1 次返回 2 条新 DOI，已见库让第 2 次返回 0 条，第 3 次只返回 1 条；右侧是推进后的时间窗口，下方是 Markdown 摘要与 SARIF">
+</picture>
+
 # dsh-lit-watch
 
 **这次检索相比上次新增了什么——而且只报新增。**
 
 *保存带时间窗口的 Crossref 文献检索；用已见 DOI 库保证重复运行只返回真正新增的条目；输出 Markdown 摘要 + SARIF。*
 
+[English](README.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24.9-brightgreen.svg)]()
 
-[English](README.md) · 简体中文
+</div>
 
 ---
 
@@ -16,6 +25,14 @@
 - **`lit_watch_add`** — 保存一个具名监视项：Crossref `query.bibliographic` 查询串、可选的额外过滤条件（`type:journal-article`）、固定的 `since` 日期和返回行数。
 - **`lit_watch_run`** — 查询 Crossref，只保留本地已见库中没有的 DOI，记录实际使用的 URL，推进时间窗口，并追加写入 `runs.jsonl`。网络失败会按监视项分别报告，且**不会推进**该监视项。
 - **`lit_watch_report`** — Markdown 摘要（每个监视项一张表）+ 针对新增条目的 SARIF 2.1.0 提示。
+
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-lit-watch-flow-v5-light.svg" width="100%" alt="dsh-lit-watch 结构图：保存的 Crossref 检索加 since 窗口拼成一个 api.crossref.org/works URL，新 DOI 与本地已见库做差异比较，运行连同实际 URL 追加进 runs.jsonl，最后渲染 Markdown 摘要与 SARIF；失败按监视项报告且不推进窗口">
+</picture>
+
+*结构：查询 → 差异 → 记录；`runs[]` 与摘要 + SARIF 是两条输出，已见库是重复运行只返回真正新增条目的关键。图内只有工具名与字段名，五语共用同一张结构图。*
 
 ## 已验证的数据源能力
 
@@ -92,6 +109,11 @@ dsh --profile <name> --dump-config | grep dsh-lit-watch
 - 监视文件是本地 JSON；只在 `root` 下写入。
 
 ## 评测
+
+![dsh-lit-watch：仓库自身构建与测试门禁的真实运行——TypeScript 构建、5 个测试文件、包面校验，全部离线](docs/assets/dsh-lit-watch-demo.gif)
+
+*动图是仓库自身 `pnpm run build` → `pnpm test` → `pnpm run verify:package` 的真实 stdout（离线 fixture、不联网；2026-11-21 复跑）。测试套件共 5 个文件、31 个测试，全部通过。*
+
 
 **30 个测试**：URL 构造（查询、组合过滤、mailto）、日期/名称校验（含不存在的日历日期）、条目解析（DOI/标题必填，年份/期刊/作者）与畸形响应拒绝、大小写不敏感的差异比较、运行时三次运行的去重（2 → 0 → 1 条新增）及窗口推进、精确 URL 缓存命中、`fresh` 绕过与拒绝缓存畸形响应体、本地网络故障隔离（窗口不推进）、监视项替换/未知/上限、损坏存储拒绝、摘要 + 历史、HTTP 边界（白名单、逐跳重定向复验、重定向上限、非 2xx 拒绝、429 重试、超时、限速）、工具 schema、add→run→report 端到端、失败分支、插件契约、包契约。
 

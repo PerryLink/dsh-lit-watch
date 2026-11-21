@@ -1,13 +1,22 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-hero-en-dark.webp">
+  <img src="docs/assets/dsh-lit-watch-hero-en-light.webp" width="100%" alt="dsh-lit-watch: three runs over the same saved Crossref watch — run 1 returns 2 new DOIs, run 2 returns 0 after the seen store, run 3 returns 1 — with the advanced time window on the right and the Markdown digest plus SARIF below">
+</picture>
+
 # dsh-lit-watch
 
 **What is new in this search since last time — and only that.**
 
 *Saved Crossref bibliographic queries with time windows, a seen-DOI store so repeated runs return genuinely new items, and a Markdown digest + SARIF.*
 
+[简体中文](README-zh.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24.9-brightgreen.svg)]()
 
-English · [简体中文](README-zh.md)
+</div>
 
 ---
 
@@ -16,6 +25,14 @@ English · [简体中文](README-zh.md)
 - **`lit_watch_add`** — save a named watch: a Crossref `query.bibliographic` string, optional extra filters (`type:journal-article`), a fixed `since` date and a row count.
 - **`lit_watch_run`** — query Crossref, keep only DOIs not in the local seen store, record the exact URL, advance the time window, and append to `runs.jsonl`. A network failure is reported per watch and **does not advance** that watch.
 - **`lit_watch_report`** — Markdown digest (one table per watch) + SARIF 2.1.0 notes for new items.
+
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-lit-watch-flow-v5-light.svg" width="100%" alt="dsh-lit-watch structure: a saved Crossref query plus a since window becomes one api.crossref.org/works URL, new DOIs are diffed against the local seen store, the run is appended to runs.jsonl with the exact URL, and a Markdown digest plus SARIF are rendered; a failed run is reported per watch and does not advance the window">
+</picture>
+
+*Structure: query → diff → record; `runs[]` and the digest + SARIF are the two outputs, and the seen store is what makes a repeat run return only genuinely new items. The token labels inside the diagram are the real tool and field names, so the same picture serves all five languages.*
 
 ## Verified provider capability
 
@@ -92,6 +109,11 @@ dsh --profile <name> --dump-config | grep dsh-lit-watch
 - Watch files are local JSON; writes only under `root`.
 
 ## Evaluation
+
+![dsh-lit-watch: a real run of the repository gates — the TypeScript build, the 5-file test suite and the package-surface check, all offline](docs/assets/dsh-lit-watch-demo.gif)
+
+*Animated: real stdout of the repository's own `pnpm run build` → `pnpm test` → `pnpm run verify:package` (offline fixtures, no network; re-run 2026-11-21). The suite passes 31 tests across 5 files.*
+
 
 **30 tests**: URL construction (query, combined filter, mailto), date/name validation including impossible calendar days, item parsing (DOI/title required, year/venue/authors) and malformed-response rejection, case-insensitive diff, runtime dedupe across three runs (2 → 0 → 1 new) with window advancement, exact-URL cache hits, `fresh` bypass and refusing to cache a malformed body, local network-failure isolation with no window advance, watch replace/unknown/limits, corrupt-store refusal, digest + history, HTTP bounds (allowlist, per-hop redirect re-validation, redirect cap, non-2xx rejection, 429 retry, timeout, throttle), tool schemas, add→run→report end to end, failure branches, plugin contract, package contract.
 
