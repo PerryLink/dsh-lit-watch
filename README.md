@@ -7,6 +7,8 @@
 
 # dsh-lit-watch
 
+当前版本 `0.1.4`。
+
 **What is new in this search since last time — and only that.**
 
 *Saved Crossref bibliographic queries with time windows, a seen-DOI store so repeated runs return genuinely new items, and a Markdown digest + SARIF.*
