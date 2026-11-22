@@ -26,7 +26,6 @@
 - **`lit_watch_run`** — consulta Crossref, conserva solo los DOI que no están en el almacén local de vistos, registra la URL exacta, avanza la ventana temporal y anexa a `runs.jsonl`. Un fallo de red se informa por watch y **no avanza** ese watch.
 - **`lit_watch_report`** — resumen Markdown (una tabla por watch) + notas SARIF 2.1.0 para los elementos nuevos.
 
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-flow-v5-dark.svg">
   <img src="docs/assets/dsh-lit-watch-flow-v5-light.svg" width="100%" alt="dsh-lit-watch estructura: una consulta de Crossref guardada más una ventana since se convierte en una única URL api.crossref.org/works, los DOI nuevos se comparan con el almacén local de vistos, la ejecución se anexa a runs.jsonl con la URL exacta, y se renderizan un resumen Markdown y SARIF; una ejecución fallida se informa por watch y no avanza la ventana">
@@ -76,7 +75,7 @@ Errores de ejecución por watch (dentro de `runs[].error`): `blocked_host` · `i
 
 | | |
 |---|---|
-| DeepSeek Harness | **`dsh-v0.2.2-rc.4`** (verificado 2026-11-18); peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
+| DeepSeek Harness | **`dsh-v0.2.3-alpha.1`** (verificado 2026-11-22); peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
 | Node | `^22.19.0 \|\| >=24.9.0` (probado `24.22.1`), solo ESM |
 | Peers | `@perrylink/dsh-research-core ^0.1.0`, `@deepseek-ai/cordis ^4.0.5-alpha.1`, `@deepseek-ai/dsh-tools`, `@deepseek-ai/schemastery ^3.18.5-alpha.1` |
 | Dependencias en tiempo de ejecución | **cero** |
@@ -85,7 +84,6 @@ Errores de ejecución por watch (dentro de `runs[].error`): `blocked_host` · `i
 dsh plugin --profile <name> add @perrylink/dsh-research-core dsh-lit-watch
 dsh --profile <name> --dump-config | grep dsh-lit-watch
 ```
-
 
 > **Nota sobre los peers de la familia:** `@perrylink/dsh-research-core` se declara como peer para un contrato de instalación único y uniforme en toda la familia de investigación, aunque este paquete no lo importa en tiempo de ejecución.
 
@@ -113,7 +111,6 @@ dsh --profile <name> --dump-config | grep dsh-lit-watch
 ![dsh-lit-watch: una ejecución real de las puertas del repositorio — la compilación TypeScript, la suite de 5 archivos y la comprobación de la superficie del paquete, todo sin conexión](docs/assets/dsh-lit-watch-demo.gif)
 
 *Animado: stdout real de `pnpm run build` → `pnpm test` → `pnpm run verify:package` del propio repositorio (fixtures sin conexión, sin red; reejecutado el 2026-11-21). La suite pasa 31 pruebas en 5 archivos.*
-
 
 **31 pruebas**: construcción de URL (consulta, filtro combinado, mailto), validación de fechas y nombres incluidas fechas de calendario imposibles, análisis de elementos (DOI/título obligatorios, año/revista/autores) y rechazo de respuestas malformadas, diff insensible a mayúsculas y minúsculas, deduplicación en tiempo de ejecución a lo largo de tres ejecuciones (2 → 0 → 1 nuevos) con avance de ventana, aciertos de caché por URL exacta, `fresh` que omite la caché y rechazo de cachear un cuerpo malformado, aislamiento local de fallos de red sin avance de ventana, reemplazo/desconocido/límites de watch, rechazo de almacén corrupto, resumen + historial, límites HTTP (lista de permitidos, revalidación de redirecciones salto a salto, tope de redirecciones, rechazo de no 2xx, reintento 429, timeout, limitación de tasa), esquemas de herramientas, add→run→report de extremo a extremo, ramas de fallo, contrato de plugin, contrato de paquete.
 

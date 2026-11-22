@@ -26,7 +26,6 @@
 - **`lit_watch_run`** — 查询 Crossref，只保留本地已见库中没有的 DOI，记录实际使用的 URL，推进时间窗口，并追加写入 `runs.jsonl`。网络失败会按监视项分别报告，且**不会推进**该监视项。
 - **`lit_watch_report`** — Markdown 摘要（每个监视项一张表）+ 针对新增条目的 SARIF 2.1.0 提示。
 
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-flow-v5-dark.svg">
   <img src="docs/assets/dsh-lit-watch-flow-v5-light.svg" width="100%" alt="dsh-lit-watch 结构图：保存的 Crossref 检索加 since 窗口拼成一个 api.crossref.org/works URL，新 DOI 与本地已见库做差异比较，运行连同实际 URL 追加进 runs.jsonl，最后渲染 Markdown 摘要与 SARIF；失败按监视项报告且不推进窗口">
@@ -76,7 +75,7 @@
 
 | | |
 |---|---|
-| DeepSeek Harness | **`dsh-v0.2.2-rc.4`**（2026-11-18 实测）；peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
+| DeepSeek Harness | **`dsh-v0.2.3-alpha.1`**（2026-11-22 实测）；peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
 | Node | `^22.19.0 \|\| >=24.9.0`（实测 `24.22.1`），仅 ESM |
 | Peer 依赖 | `@perrylink/dsh-research-core ^0.1.0`、`@deepseek-ai/cordis ^4.0.5-alpha.1`、`@deepseek-ai/dsh-tools`、`@deepseek-ai/schemastery ^3.18.5-alpha.1` |
 | 运行时依赖 | **零** |
@@ -85,7 +84,6 @@
 dsh plugin --profile <name> add @perrylink/dsh-research-core dsh-lit-watch
 dsh --profile <name> --dump-config | grep dsh-lit-watch
 ```
-
 
 > **家族统一 peer 说明：** 尽管本包运行时不 import，`@perrylink/dsh-research-core` 仍作为 peer 声明，以保证整个研究插件家族使用同一套安装契约。
 
@@ -113,7 +111,6 @@ dsh --profile <name> --dump-config | grep dsh-lit-watch
 ![dsh-lit-watch：仓库自身构建与测试门禁的真实运行——TypeScript 构建、5 个测试文件、包面校验，全部离线](docs/assets/dsh-lit-watch-demo.gif)
 
 *动图是仓库自身 `pnpm run build` → `pnpm test` → `pnpm run verify:package` 的真实 stdout（离线 fixture、不联网；2026-11-21 复跑）。测试套件共 5 个文件、31 个测试，全部通过。*
-
 
 **31 个测试**：URL 构造（查询、组合过滤、mailto）、日期/名称校验（含不存在的日历日期）、条目解析（DOI/标题必填，年份/期刊/作者）与畸形响应拒绝、大小写不敏感的差异比较、运行时三次运行的去重（2 → 0 → 1 条新增）及窗口推进、精确 URL 缓存命中、`fresh` 绕过与拒绝缓存畸形响应体、本地网络故障隔离（窗口不推进）、监视项替换/未知/上限、损坏存储拒绝、摘要 + 历史、HTTP 边界（白名单、逐跳重定向复验、重定向上限、非 2xx 拒绝、429 重试、超时、限速）、工具 schema、add→run→report 端到端、失败分支、插件契约、包契约。
 

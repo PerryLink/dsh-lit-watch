@@ -26,7 +26,6 @@
 - **`lit_watch_run`** — Crossref से क्वेरी करता है, केवल वे DOI रखता है जो स्थानीय seen स्टोर में नहीं हैं, सटीक URL दर्ज करता है, समय विंडो आगे बढ़ाता है और `runs.jsonl` में जोड़ता है। नेटवर्क विफलता प्रति watch रिपोर्ट होती है और उस watch को **आगे नहीं बढ़ाती**।
 - **`lit_watch_report`** — Markdown सारांश (प्रति watch एक तालिका) + नए आइटम के लिए SARIF 2.1.0 नोट्स।
 
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-flow-v5-dark.svg">
   <img src="docs/assets/dsh-lit-watch-flow-v5-light.svg" width="100%" alt="dsh-lit-watch संरचना: एक सहेजी गई Crossref क्वेरी और एक since विंडो मिलकर एक api.crossref.org/works URL बनाते हैं, नए DOI स्थानीय seen स्टोर से तुलना होते हैं, रन सटीक URL के साथ runs.jsonl में जुड़ता है, और Markdown सारांश तथा SARIF रेंडर होते हैं; विफल रन प्रति watch रिपोर्ट होता है और विंडो आगे नहीं बढ़ाता">
@@ -76,7 +75,7 @@
 
 | | |
 |---|---|
-| DeepSeek Harness | **`dsh-v0.2.2-rc.4`** (सत्यापित 2026-11-18); peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
+| DeepSeek Harness | **`dsh-v0.2.3-alpha.1`** (सत्यापित 2026-11-22); peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
 | Node | `^22.19.0 \|\| >=24.9.0` (`24.22.1` पर परीक्षित), केवल ESM |
 | Peers | `@perrylink/dsh-research-core ^0.1.0`, `@deepseek-ai/cordis ^4.0.5-alpha.1`, `@deepseek-ai/dsh-tools`, `@deepseek-ai/schemastery ^3.18.5-alpha.1` |
 | रनटाइम निर्भरताएँ | **शून्य** |
@@ -85,7 +84,6 @@
 dsh plugin --profile <name> add @perrylink/dsh-research-core dsh-lit-watch
 dsh --profile <name> --dump-config | grep dsh-lit-watch
 ```
-
 
 > **परिवार-व्यापी peer नोट:** `@perrylink/dsh-research-core` को पूरे रिसर्च परिवार में एक ही, एकरूप इंस्टॉल अनुबंध के लिए peer के रूप में घोषित किया गया है, भले ही यह पैकेज रनटाइम पर उसे इम्पोर्ट नहीं करता।
 
@@ -113,7 +111,6 @@ dsh --profile <name> --dump-config | grep dsh-lit-watch
 ![dsh-lit-watch: रिपॉज़िटरी के गेटों का एक वास्तविक रन — TypeScript बिल्ड, 5 फ़ाइलों की टेस्ट सूट और पैकेज-सतह जाँच, सब ऑफ़लाइन](docs/assets/dsh-lit-watch-demo.gif)
 
 *एनिमेटेड: रिपॉज़िटरी के अपने `pnpm run build` → `pnpm test` → `pnpm run verify:package` का वास्तविक stdout (ऑफ़लाइन fixture, कोई नेटवर्क नहीं; 2026-11-21 को पुनः चलाया गया)। सूट 5 फ़ाइलों में 31 परीक्षण पास करता है।*
-
 
 **31 परीक्षण**: URL निर्माण (क्वेरी, संयुक्त फ़िल्टर, mailto), तिथि/नाम सत्यापन जिसमें असंभव कैलेंडर तिथियाँ भी शामिल हैं, आइटम पार्सिंग (DOI/शीर्षक आवश्यक, वर्ष/पत्रिका/लेखक) और विकृत रिस्पॉन्स की अस्वीकृति, केस-असंवेदनशील अंतर, तीन रनों में रनटाइम डीडुप (2 → 0 → 1 नए) विंडो उन्नयन के साथ, सटीक-URL कैश हिट, `fresh` बायपास और विकृत बॉडी को कैश करने से इनकार, विंडो उन्नयन के बिना स्थानीय नेटवर्क-विफलता अलगाव, watch प्रतिस्थापन/अज्ञात/सीमाएँ, भ्रष्ट स्टोर की अस्वीकृति, सारांश + इतिहास, HTTP सीमाएँ (अनुमति सूची, प्रति-हॉप रीडायरेक्ट पुनः सत्यापन, रीडायरेक्ट सीमा, गैर-2xx अस्वीकृति, 429 पुनः प्रयास, timeout, थ्रॉटल), टूल स्कीमा, add→run→report एंड-टू-एंड, विफलता शाखाएँ, प्लगइन अनुबंध, पैकेज अनुबंध।
 

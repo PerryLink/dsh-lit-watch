@@ -26,7 +26,6 @@
 - **`lit_watch_run`** — query Crossref, keep only DOIs not in the local seen store, record the exact URL, advance the time window, and append to `runs.jsonl`. A network failure is reported per watch and **does not advance** that watch.
 - **`lit_watch_report`** — Markdown digest (one table per watch) + SARIF 2.1.0 notes for new items.
 
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-lit-watch-flow-v5-dark.svg">
   <img src="docs/assets/dsh-lit-watch-flow-v5-light.svg" width="100%" alt="dsh-lit-watch structure: a saved Crossref query plus a since window becomes one api.crossref.org/works URL, new DOIs are diffed against the local seen store, the run is appended to runs.jsonl with the exact URL, and a Markdown digest plus SARIF are rendered; a failed run is reported per watch and does not advance the window">
@@ -76,7 +75,7 @@ Per-watch run errors (inside `runs[].error`): `blocked_host` · `invalid_url` ·
 
 | | |
 |---|---|
-| DeepSeek Harness | **`dsh-v0.2.2-rc.4`** (verified 2026-11-18); peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
+| DeepSeek Harness | **`dsh-v0.2.3-alpha.1`** (verified 2026-11-22); peer `>=0.2.1-0 <0.3.0 \|\| >=0.2.2-0 <0.3.0` |
 | Node | `^22.19.0 \|\| >=24.9.0` (tested `24.22.1`), ESM only |
 | Peers | `@perrylink/dsh-research-core ^0.1.0`, `@deepseek-ai/cordis ^4.0.5-alpha.1`, `@deepseek-ai/dsh-tools`, `@deepseek-ai/schemastery ^3.18.5-alpha.1` |
 | Runtime dependencies | **zero** |
@@ -85,7 +84,6 @@ Per-watch run errors (inside `runs[].error`): `blocked_host` · `invalid_url` ·
 dsh plugin --profile <name> add @perrylink/dsh-research-core dsh-lit-watch
 dsh --profile <name> --dump-config | grep dsh-lit-watch
 ```
-
 
 > **Family-wide peer note:** `@perrylink/dsh-research-core` is declared as a peer for a single, uniform install contract across the research family, even though this package does not import it at runtime.
 
@@ -113,7 +111,6 @@ dsh --profile <name> --dump-config | grep dsh-lit-watch
 ![dsh-lit-watch: a real run of the repository gates — the TypeScript build, the 5-file test suite and the package-surface check, all offline](docs/assets/dsh-lit-watch-demo.gif)
 
 *Animated: real stdout of the repository's own `pnpm run build` → `pnpm test` → `pnpm run verify:package` (offline fixtures, no network; re-run 2026-11-21). The suite passes 31 tests across 5 files.*
-
 
 **31 tests**: URL construction (query, combined filter, mailto), date/name validation including impossible calendar days, item parsing (DOI/title required, year/venue/authors) and malformed-response rejection, case-insensitive diff, runtime dedupe across three runs (2 → 0 → 1 new) with window advancement, exact-URL cache hits, `fresh` bypass and refusing to cache a malformed body, local network-failure isolation with no window advance, watch replace/unknown/limits, corrupt-store refusal, digest + history, HTTP bounds (allowlist, per-hop redirect re-validation, redirect cap, non-2xx rejection, 429 retry, timeout, throttle), tool schemas, add→run→report end to end, failure branches, plugin contract, package contract.
 
